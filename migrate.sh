@@ -45,6 +45,7 @@ if [ "${MODE:-}" != "qmi" ]; then
 fi
 
 [ -e /dev/cdc-wdm0 ] || { echo "ERROR: cdc-wdm0 not found."; unmask_sixfab; exit 1; }
+sleep 5
 
 qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode
 ip link set wwan0 down
