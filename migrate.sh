@@ -33,7 +33,7 @@ done
 
 for i in $(seq 1 60); do [ -e /dev/cdc-wdm0 ] && break; sleep 3; done
 [ -e /dev/cdc-wdm0 ] || { echo "ERROR: cdc-wdm0 not found."; unmask_sixfab; exit 1; }
-sleep 5
+sleep 15
 
 qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode
 ip link set wwan0 down
