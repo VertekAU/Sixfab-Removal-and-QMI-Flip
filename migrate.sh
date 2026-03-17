@@ -31,9 +31,8 @@ for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
     [ -e "$p" ] && atcom -p "$p" -t 3 'AT+CFUN=1,1' 2>/dev/null || true
 done
 
-for i in $(seq 1 60); do [ -e /dev/cdc-wdm0 ] && break; sleep 3; done
+sleep 30
 [ -e /dev/cdc-wdm0 ] || { echo "ERROR: cdc-wdm0 not found."; unmask_sixfab; exit 1; }
-sleep 15
 
 qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode
 ip link set wwan0 down
