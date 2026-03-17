@@ -23,15 +23,27 @@ for u in core_agent.service core_manager.service; do
     systemctl mask    "$u" 2>/dev/null || true
 done
 
+# Check current mode — only flip and reset if not already in QMI mode
+MODE=""
 for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
-    [ -e "$p" ] && atcom -p "$p" -t 3 'AT+QCFG="usbnet",0' 2>/dev/null || true
+    [ -e "$p" ] || continue
+    R="$(atcom -p "$p" -t 3 'AT+QCFG="usbnet"' 2>/dev/null || true)"
+    echo "$R" | grep -q '"usbnet",0' && MODE="qmi" && break
+    echo "$R" | grep -q '"usbnet"' && MODE="ecm" && break
 done
-sleep 2
-for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
-    [ -e "$p" ] && atcom -p "$p" -t 3 'AT+CFUN=1,1' 2>/dev/null || true
-done
+echo "Detected modem mode: ${MODE:-unknown}"
 
-sleep 30
+if [ "${MODE:-}" != "qmi" ]; then
+    for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
+        [ -e "$p" ] && atcom -p "$p" -t 3 'AT+QCFG="usbnet",0' 2>/dev/null || true
+    done
+    sleep 2
+    for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
+        [ -e "$p" ] && atcom -p "$p" -t 3 'AT+CFUN=1,1' 2>/dev/null || true
+    done
+    sleep 30
+fi
+
 [ -e /dev/cdc-wdm0 ] || { echo "ERROR: cdc-wdm0 not found."; unmask_sixfab; exit 1; }
 
 qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode
