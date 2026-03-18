@@ -14,8 +14,8 @@ unmask_sixfab() {
     done
 }
 
-apt-get update -qq && apt-get install -y --no-upgrade libqmi-utils udhcpc 2>/dev/null || {
-    apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-upgrade libqmi-utils udhcpc
+apt-get update -qq && apt-get install -y --no-upgrade libqmi-utils udhcpc busybox 2>/dev/null || {
+    apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-upgrade libqmi-utils udhcpc busybox
 }
 pip3 install atcom --break-system-packages -q
 
@@ -43,6 +43,8 @@ if [ "${MODE:-}" != "qmi" ]; then
     for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
         [ -e "$p" ] && atcom -p "$p" -t 3 'AT+CFUN=1,1' 2>/dev/null || true
     done
+    # Explicitly restore wlan0 in case USB re-enumeration disrupted it
+    ip link set wlan0 up 2>/dev/null || true
     for i in $(seq 1 60); do [ -e /dev/cdc-wdm0 ] && break; sleep 3; done
 fi
 
