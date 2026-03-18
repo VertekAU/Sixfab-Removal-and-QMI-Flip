@@ -14,7 +14,9 @@ unmask_sixfab() {
     done
 }
 
-apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-upgrade libqmi-utils udhcpc
+apt-get update -qq && apt-get install -y --no-upgrade libqmi-utils udhcpc 2>/dev/null || {
+    apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-upgrade libqmi-utils udhcpc
+}
 pip3 install atcom --break-system-packages -q
 
 for u in core_agent.service core_manager.service; do
@@ -46,11 +48,20 @@ fi
 
 [ -e /dev/cdc-wdm0 ] || { echo "ERROR: cdc-wdm0 not found."; unmask_sixfab; exit 1; }
 
-# Wait for modem to be ready for QMI commands
+# Wait for modem hardware ready (max 60s)
 for i in $(seq 1 30); do
     qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode >/dev/null 2>&1 && break
+    [ "$i" -eq 30 ] && { echo "ERROR: modem not ready."; unmask_sixfab; exit 1; }
     sleep 2
 done
+
+# Wait for network registration (max 60s)
+for i in $(seq 1 30); do
+    qmicli -d /dev/cdc-wdm0 --nas-get-signal-strength 2>/dev/null | grep -q "Network 'lte'" && break
+    [ "$i" -eq 30 ] && { echo "ERROR: no network registration."; unmask_sixfab; exit 1; }
+    sleep 2
+done
+
 qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode
 ip link set wwan0 down
 echo 'Y' | tee /sys/class/net/wwan0/qmi/raw_ip >/dev/null
@@ -62,11 +73,12 @@ udhcpc -q -f -i wwan0
 ping -c 3 -W 5 8.8.8.8 >/dev/null 2>&1 || { echo "ERROR: ping failed."; unmask_sixfab; exit 1; }
 echo "LTE verified."
 
-bash -c "$(curl -sN https://install.connect.sixfab.com)" -- --uninstall || true
-rm -rf /opt/sixfab 2>/dev/null || true
-
 systemctl enable vcm-qmi-reconnect.service 2>/dev/null || true
 date -Is > "$MARKER"
 systemctl disable vcm-migrate-sixfab-ecm-to-qmi.service 2>/dev/null || true
+
+bash -c "$(curl -sN https://install.connect.sixfab.com)" -- --uninstall || true
+rm -rf /opt/sixfab 2>/dev/null || true
+
 systemctl daemon-reload || true
 echo "=== MIGRATION COMPLETE $(date -Is) ==="
