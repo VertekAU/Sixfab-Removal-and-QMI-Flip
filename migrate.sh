@@ -14,7 +14,7 @@ unmask_sixfab() {
     done
 }
 
-apt-get update -qq && apt-get install -y libqmi-utils udhcpc
+apt-get update -qq && apt-get install -y --fix-missing libqmi-utils udhcpc
 pip3 install atcom --break-system-packages -q
 
 for u in core_agent.service core_manager.service; do
