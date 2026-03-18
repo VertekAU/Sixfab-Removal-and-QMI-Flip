@@ -14,7 +14,7 @@ unmask_sixfab() {
     done
 }
 
-apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y libqmi-utils udhcpc
+apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y --no-upgrade libqmi-utils udhcpc
 pip3 install atcom --break-system-packages -q
 
 for u in core_agent.service core_manager.service; do
