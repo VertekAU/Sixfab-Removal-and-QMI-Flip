@@ -77,6 +77,8 @@ systemctl enable vcm-qmi-reconnect.service 2>/dev/null || true
 date -Is > "$MARKER"
 systemctl disable vcm-migrate-sixfab-ecm-to-qmi.service 2>/dev/null || true
 
+echo "LTE confirmed. Uninstalling Sixfab — shell will drop for several minutes, this is expected."
+sleep 5
 bash -c "$(curl -sN https://install.connect.sixfab.com)" -- --uninstall || true
 rm -rf /opt/sixfab 2>/dev/null || true
 
