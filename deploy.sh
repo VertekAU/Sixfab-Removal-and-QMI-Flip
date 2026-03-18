@@ -7,6 +7,26 @@ BASE="https://raw.githubusercontent.com/VertekAU/Sixfab-Removal-and-QMI-Flip/mai
 
 mkdir -p /usr/local/sbin /var/lib/vcm /var/log
 
+# If already migrated, print status report and exit
+if [ -f /var/lib/vcm/migration_qmi_done ]; then
+    echo "=== ALREADY MIGRATED ==="
+    echo "Marker:   $(cat /var/lib/vcm/migration_qmi_done)"
+    WWAN_IP="$(ip -4 addr show wwan0 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)"
+    WWAN_GW="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via"){print $(i+1); exit}}')"
+    WWAN_METRIC="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="metric"){print $(i+1); exit}}')"
+    echo "wwan0:    ${WWAN_IP:-no IP} (gw=${WWAN_GW:-none} metric=${WWAN_METRIC:-0})"
+    for iface in wlan0 eth0; do
+        IFACE_IP="$(ip -4 addr show $iface 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)"
+        IFACE_METRIC="$(ip route show default dev $iface 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="metric"){print $(i+1); exit}}')"
+        [ -n "${IFACE_IP:-}" ] && echo "$iface:    $IFACE_IP metric=${IFACE_METRIC:-0}"
+    done
+    [ -d /opt/sixfab ] && echo "Sixfab:   present (unexpected)" || echo "Sixfab:   absent"
+    systemctl is-active core_manager.service 2>/dev/null | grep -q active \
+        && echo "Services: core_manager running (unexpected)" \
+        || echo "Services: core_manager not running"
+    exit 0
+fi
+
 curl -sS "$BASE/migrate.sh"   -o /usr/local/sbin/vcm_migrate_sixfab_ecm_to_qmi.sh
 curl -sS "$BASE/reconnect.sh" -o /usr/local/sbin/vcm_qmi_reconnect.sh
 
