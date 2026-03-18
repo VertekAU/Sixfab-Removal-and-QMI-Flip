@@ -4,7 +4,22 @@ set -euo pipefail
 MARKER="/var/lib/vcm/migration_qmi_done"
 mkdir -p /var/lib/vcm
 
-[ -f "$MARKER" ] && { echo "Already migrated."; exit 0; }
+if [ -f "$MARKER" ]; then
+    echo "=== ALREADY MIGRATED ==="
+    echo "Marker:   $(cat $MARKER)"
+    WWAN_IP="$(ip -4 addr show wwan0 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)"
+    WWAN_GW="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via"){print $(i+1); exit}}')"
+    WWAN_METRIC="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="metric"){print $(i+1); exit}}')"
+    echo "wwan0:    ${WWAN_IP:-no IP} (gw=${WWAN_GW:-none} metric=${WWAN_METRIC:-0})"
+    for iface in wlan0 eth0; do
+        IFACE_IP="$(ip -4 addr show $iface 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)"
+        IFACE_METRIC="$(ip route show default dev $iface 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="metric"){print $(i+1); exit}}')"
+        [ -n "$IFACE_IP" ] && echo "$iface:    $IFACE_IP metric=${IFACE_METRIC:-0}"
+    done
+    [ -d /opt/sixfab ] && echo "Sixfab:   present (unexpected)" || echo "Sixfab:   absent"
+    systemctl is-active core_manager.service 2>/dev/null | grep -q active         && echo "Services: core_manager running (unexpected)"         || echo "Services: core_manager not running"
+    exit 0
+fi
 
 unmask_sixfab() {
     for u in core_agent.service core_manager.service; do
