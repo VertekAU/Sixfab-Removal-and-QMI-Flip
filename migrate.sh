@@ -64,6 +64,7 @@ for i in $(seq 1 30); do
     [ "$i" -eq 30 ] && { echo "ERROR: no network registration."; unmask_sixfab; exit 1; }
     sleep 2
 done
+sleep 3
 
 qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode
 ip link set wwan0 down
