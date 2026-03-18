@@ -12,7 +12,8 @@ udhcpc -q -f -i wwan0
 # Fix wwan0 route metric so WiFi remains preferred when available
 WAN_GW="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via"){print $(i+1); exit}}')"
 if [ -n "${WAN_GW:-}" ]; then
-    ip route replace default via "$WAN_GW" dev wwan0 metric 700
+    ip route del default dev wwan0 2>/dev/null || true
+    ip route add default via "$WAN_GW" dev wwan0 metric 700
 fi
 
 echo "[$(date -Is)] QMI reconnect complete."

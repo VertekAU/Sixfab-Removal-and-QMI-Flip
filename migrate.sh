@@ -102,7 +102,8 @@ udhcpc -q -f -i wwan0
 # Fix wwan0 route metric so WiFi remains preferred for existing connections
 WAN_GW="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via"){print $(i+1); exit}}')"
 if [ -n "${WAN_GW:-}" ]; then
-    ip route replace default via "$WAN_GW" dev wwan0 metric 700
+    ip route del default dev wwan0 2>/dev/null || true
+    ip route add default via "$WAN_GW" dev wwan0 metric 700
 fi
 
 ping -c 3 -W 5 8.8.8.8 >/dev/null 2>&1 || { echo "ERROR: ping failed."; unmask_sixfab; exit 1; }
