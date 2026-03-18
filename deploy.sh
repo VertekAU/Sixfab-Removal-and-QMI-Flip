@@ -50,6 +50,6 @@ UNIT
 systemctl daemon-reload
 systemctl enable vcm-migrate-sixfab-ecm-to-qmi.service \
                  vcm-qmi-reconnect.service 2>/dev/null || true
-systemctl start vcm-migrate-sixfab-ecm-to-qmi.service
-echo "Migration running. Follow with:"
-echo "  sudo journalctl -u vcm-migrate-sixfab-ecm-to-qmi.service -f"
+systemctl start vcm-migrate-sixfab-ecm-to-qmi.service &
+sleep 2
+journalctl -u vcm-migrate-sixfab-ecm-to-qmi.service -f --no-pager
