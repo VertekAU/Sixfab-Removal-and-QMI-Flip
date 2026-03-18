@@ -49,10 +49,20 @@ done
 echo "Detected modem mode: ${MODE:-unknown}"
 
 if [ "${MODE:-}" != "qmi" ]; then
+    # Pin default route to wlan0/eth0 before modem switch so usb0 going down doesn't disrupt routing
+    for iface in wlan0 eth0; do
+        GW="$(ip route show default dev $iface 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via"){print $(i+1); exit}}')"
+        if [ -n "${GW:-}" ]; then
+            ip route replace default via "$GW" dev "$iface" metric 50
+            echo "Pinned default route to $iface via $GW"
+            break
+        fi
+    done
+    # Pre-emptively restart DNS before modem mode switch disrupts network stack
+    systemctl restart systemd-resolved 2>/dev/null || true
     for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
         [ -e "$p" ] && atcom -p "$p" -t 3 'AT+QCFG="usbnet",0' 2>/dev/null || true
     done
-    # Restore DNS immediately after mode switch — usb0 dropping can disrupt systemd-resolved
     systemctl restart systemd-resolved 2>/dev/null || true
     ip link set wlan0 up 2>/dev/null || true
     sleep 2
