@@ -14,7 +14,7 @@ unmask_sixfab() {
     done
 }
 
-apt-get clean && apt-get update && apt-get install -y libqmi-utils udhcpc
+apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update && apt-get install -y libqmi-utils udhcpc
 pip3 install atcom --break-system-packages -q
 
 for u in core_agent.service core_manager.service; do
@@ -45,8 +45,12 @@ if [ "${MODE:-}" != "qmi" ]; then
 fi
 
 [ -e /dev/cdc-wdm0 ] || { echo "ERROR: cdc-wdm0 not found."; unmask_sixfab; exit 1; }
-sleep 5
 
+# Wait for modem to be ready for QMI commands
+for i in $(seq 1 30); do
+    qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode >/dev/null 2>&1 && break
+    sleep 2
+done
 qmicli -d /dev/cdc-wdm0 --dms-get-operating-mode
 ip link set wwan0 down
 echo 'Y' | tee /sys/class/net/wwan0/qmi/raw_ip >/dev/null
