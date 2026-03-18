@@ -52,11 +52,13 @@ if [ "${MODE:-}" != "qmi" ]; then
     for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
         [ -e "$p" ] && atcom -p "$p" -t 3 'AT+QCFG="usbnet",0' 2>/dev/null || true
     done
+    # Restore DNS immediately after mode switch — usb0 dropping can disrupt systemd-resolved
+    systemctl restart systemd-resolved 2>/dev/null || true
+    ip link set wlan0 up 2>/dev/null || true
     sleep 2
     for p in /dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyUSB2 /dev/ttyUSB3; do
         [ -e "$p" ] && atcom -p "$p" -t 3 'AT+CFUN=1,1' 2>/dev/null || true
     done
-    # Restore DNS and wlan0 after USB re-enumeration from modem reset
     systemctl restart systemd-resolved 2>/dev/null || true
     ip link set wlan0 up 2>/dev/null || true
     for i in $(seq 1 60); do [ -e /dev/cdc-wdm0 ] && break; sleep 3; done
