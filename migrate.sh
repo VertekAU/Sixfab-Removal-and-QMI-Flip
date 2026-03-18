@@ -19,11 +19,24 @@ apt-get update -qq && apt-get install -y --no-upgrade libqmi-utils udhcpc busybo
 }
 pip3 install atcom --break-system-packages -q
 
-for u in core_agent.service core_manager.service; do
-    systemctl stop    "$u" 2>/dev/null || true
-    systemctl disable "$u" 2>/dev/null || true
-    systemctl mask    "$u" 2>/dev/null || true
-done
+echo "--- Stopping core_agent ---"
+systemctl stop core_agent.service 2>/dev/null || true
+echo "--- core_agent stopped ---"
+sleep 3
+echo "--- Disabling core_agent ---"
+systemctl disable core_agent.service 2>/dev/null || true
+systemctl mask core_agent.service 2>/dev/null || true
+echo "--- core_agent masked ---"
+sleep 3
+echo "--- Stopping core_manager ---"
+systemctl stop core_manager.service 2>/dev/null || true
+echo "--- core_manager stopped ---"
+sleep 3
+echo "--- Disabling core_manager ---"
+systemctl disable core_manager.service 2>/dev/null || true
+systemctl mask core_manager.service 2>/dev/null || true
+echo "--- core_manager masked ---"
+sleep 3
 
 # Check current mode — only flip and reset if not already in QMI mode
 MODE=""
