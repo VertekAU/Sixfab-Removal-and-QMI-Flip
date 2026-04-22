@@ -58,6 +58,7 @@ cat > /etc/systemd/system/vcm-qmi-reconnect.service <<'UNIT'
 [Unit]
 Description=VCM QMI reconnect on boot
 After=network-online.target
+Wants=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
@@ -71,4 +72,5 @@ systemctl enable vcm-migrate-sixfab-ecm-to-qmi.service \
                  vcm-qmi-reconnect.service 2>/dev/null || true
 systemctl start vcm-migrate-sixfab-ecm-to-qmi.service &
 sleep 2
-journalctl -u vcm-migrate-sixfab-ecm-to-qmi.service -f --no-pager
+journalctl -u vcm-migrate-sixfab-ecm-to-qmi.service -f --no-pager | grep -m 1 "Consumed.*CPU time" || true
+echo "=== Migration service finished. Run: journalctl -u vcm-migrate-sixfab-ecm-to-qmi.service to review ==="

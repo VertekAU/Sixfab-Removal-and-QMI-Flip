@@ -6,7 +6,7 @@ mkdir -p /var/lib/vcm
 
 if [ -f "$MARKER" ]; then
     echo "=== ALREADY MIGRATED ==="
-    echo "Marker:   $(cat $MARKER)"
+    echo "Marker:   $(cat "$MARKER")"
     WWAN_IP="$(ip -4 addr show wwan0 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)"
     WWAN_GW="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via"){print $(i+1); exit}}')"
     WWAN_METRIC="$(ip route show default dev wwan0 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="metric"){print $(i+1); exit}}')"
